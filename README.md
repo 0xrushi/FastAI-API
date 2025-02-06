@@ -9,6 +9,8 @@ This project serves as a **drop-in replacement for FastAPI-based applications** 
 - **OpenAPI Integration** – Dynamically fetches OpenAPI specifications from services.
 - **OpenAI API Calls** – Automates API interactions based on user instructions.
 
+![Screen Recording 2025-02-06 at 8 26 27 AM](https://github.com/user-attachments/assets/7d0f5050-ac2b-42eb-a873-d62eca256c12)
+
 ---
 
 ## 🏗 **Project Structure**
