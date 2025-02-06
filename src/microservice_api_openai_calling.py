@@ -145,16 +145,16 @@ class APIOrchestrator:
 
 
     def execute_api_call(self, function_name: str, params: Dict) -> Dict:
-        """Execute API call with user confirmation"""
+        """Execute and log API call with detailed request parameters display"""
         for api_name, spec in self.openapi_specs.items():
             for path, methods in spec["paths"].items():
                 for method, details in methods.items():
                     current_func_name = details.get("operationId") or f"{method}_{path.replace('/', '_')}"
 
                     if current_func_name == function_name:
-                        full_path = self._get_full_path(self.config.base_url, api_name, path)
+                        full_path = f"{self.config.base_url}/{api_name}{path}"
 
-                        # Replace placeholders in the URL if necessary
+                        # Handle dynamic URL parameters (path variables)
                         if "parameters" in params:
                             try:
                                 full_path = full_path.format(**params["parameters"])
@@ -162,10 +162,19 @@ class APIOrchestrator:
                                 console.print(f"[red]Missing path parameter: {e}")
                                 return {"error": f"Missing path parameter: {e}"}
 
-                        # Display API request details
-                        console.print(f"\n[yellow]API Request:[/yellow] {method.upper()} {full_path}")
+                        console.print("\n[yellow]API Request Details:[/yellow]")
+                        console.print(f"  [bold cyan]Method:[/bold cyan] {method.upper()}")
+                        console.print(f"  [bold cyan]URL:[/bold cyan] {full_path}")
 
-                        # Confirm before executing API call
+                        if "parameters" in params and params["parameters"]:
+                            console.print("[bold cyan]Query Parameters:[/bold cyan]")
+                            for key, value in params["parameters"].items():
+                                console.print(f"  [green]{key}:[/green] {value}")
+
+                        if "requestBody" in params and params["requestBody"]:
+                            console.print("[bold cyan]Request Body:[/bold cyan]")
+                            console.print(json.dumps(params["requestBody"], indent=4))
+
                         confirm = Confirm.ask("[yellow]Do you want to proceed with this API call?[/yellow]", default=True)
                         if not confirm:
                             console.print("[red]API call canceled by user.[/red]")
@@ -180,6 +189,9 @@ class APIOrchestrator:
                                 headers={"Content-Type": "application/json"}
                             )
                             response.raise_for_status()
+
+                            self._log_api_call(method, full_path, params.get("parameters"), params.get("requestBody"))
+                            
                             return response.json()
 
                         except requests.exceptions.RequestException as e:
@@ -320,7 +332,8 @@ class APIOrchestrator:
 def main():
     config = APIConfig(debug=False)
     orchestrator = APIOrchestrator(config)
-    instruction = "Create a user and get userID, then add an item to cart for that userID."
+    instruction = "Create a user and get userID, then add an item to cart for that userID. Get me user details for that userid"
+    console.print(f"[green]Instruction: {instruction}")
     orchestrator.process_instruction(instruction)
 
 if __name__ == "__main__":
