@@ -142,64 +142,6 @@ class APIOrchestrator:
         endpoint_path = '/' + endpoint_path.lstrip('/')
         # Prepend API name to ensure correct routing
         return f"{base_path}/{api_name}{endpoint_path}"
-
-
-    def execute_api_call(self, function_name: str, params: Dict) -> Dict:
-        """Execute and log API call with detailed request parameters display"""
-        for api_name, spec in self.openapi_specs.items():
-            for path, methods in spec["paths"].items():
-                for method, details in methods.items():
-                    current_func_name = details.get("operationId") or f"{method}_{path.replace('/', '_')}"
-
-                    if current_func_name == function_name:
-                        full_path = f"{self.config.base_url}/{api_name}{path}"
-
-                        # Handle dynamic URL parameters (path variables)
-                        if "parameters" in params:
-                            try:
-                                full_path = full_path.format(**params["parameters"])
-                            except KeyError as e:
-                                console.print(f"[red]Missing path parameter: {e}")
-                                return {"error": f"Missing path parameter: {e}"}
-
-                        console.print("\n[yellow]API Request Details:[/yellow]")
-                        console.print(f"  [bold cyan]Method:[/bold cyan] {method.upper()}")
-                        console.print(f"  [bold cyan]URL:[/bold cyan] {full_path}")
-
-                        if "parameters" in params and params["parameters"]:
-                            console.print("[bold cyan]Query Parameters:[/bold cyan]")
-                            for key, value in params["parameters"].items():
-                                console.print(f"  [green]{key}:[/green] {value}")
-
-                        if "requestBody" in params and params["requestBody"]:
-                            console.print("[bold cyan]Request Body:[/bold cyan]")
-                            console.print(json.dumps(params["requestBody"], indent=4))
-
-                        confirm = Confirm.ask("[yellow]Do you want to proceed with this API call?[/yellow]", default=True)
-                        if not confirm:
-                            console.print("[red]API call canceled by user.[/red]")
-                            return {"error": "API call canceled by user"}
-
-                        try:
-                            response = requests.request(
-                                method=method.upper(),
-                                url=full_path,
-                                json=params.get("requestBody"),
-                                params=params.get("parameters") if method.lower() == "get" else None,
-                                headers={"Content-Type": "application/json"}
-                            )
-                            response.raise_for_status()
-
-                            self._log_api_call(method, full_path, params.get("parameters"), params.get("requestBody"))
-                            
-                            return response.json()
-
-                        except requests.exceptions.RequestException as e:
-                            console.print(f"[red]API call failed: {str(e)}")
-                            return {"error": f"API call failed: {str(e)}"}
-
-        return {"error": f"Function '{function_name}' not found in OpenAPI specs"}
-
         
     def process_instruction(self, instruction: str) -> None:
         """Process user instruction and execute necessary API calls"""
@@ -298,11 +240,15 @@ class APIOrchestrator:
                         if "parameters" in params:
                             try:
                                 full_path = full_path.format(**params["parameters"])
+                                console.print(f"\n[yellow]API Request:[/yellow] {method.upper()} {full_path}")
                             except KeyError as e:
                                 console.print(f"[red]Missing path parameter: {e}")
                                 return {"error": f"Missing path parameter: {e}"}
 
-                        console.print(f"\n[yellow]API Request:[/yellow] {method.upper()} {full_path}")
+                        if "parameters" not in params:
+                            console.print(f"\n[yellow]API Request:[/yellow] {method.upper()} {full_path}")
+                        if "requestBody" in params:
+                            console.print(f"[yellow]Request Body:[/yellow] {json.dumps(params['requestBody'], indent=4)}")
 
                         confirm = Confirm.ask("[yellow]Proceed with API call?[/yellow]", default=True)
                         if not confirm:
