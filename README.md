@@ -2,12 +2,14 @@
 ## A Seamless Drop-in Solution for Tool Calling in FastAPI with OpenAI Integration
 ---
 
-## 📌 **Project Overview**
+## 📌 **Overview**
 This project serves as a **drop-in replacement for FastAPI-based applications** or any API utilizing the OpenAPI format. It seamlessly integrates with an **already running FastAPI server**, enabling OpenAI-powered function calling, supporting:
 - **Single API Mode** – Run a standalone FastAPI app with OpenAI-powered function calling.
 - **Microservices Mode** – Run multiple services with an Nginx API gateway and OpenAPI-based function calling.
 - **OpenAPI Integration** – Dynamically fetches OpenAPI specifications from services.
 - **OpenAI API Calls** – Automates API interactions based on user instructions.
+
+![Screen Recording 2025-02-06 at 8 26 27 AM](https://github.com/user-attachments/assets/7d0f5050-ac2b-42eb-a873-d62eca256c12)
 
 ---
 
@@ -74,6 +76,11 @@ Saves OpenAPI specs of all running microservices in `src/openapi/openapi_specs`.
 python3 src/microservice_api_openai_calling.py
 ```
 Uses OpenAI to generate and execute API calls dynamically.
+
+#### Step 4: Replay the logs
+```sh
+python src/replay_logs.py
+```
 
 ---
 
