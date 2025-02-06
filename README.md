@@ -3,7 +3,7 @@
 ---
 
 ## 📌 **Project Overview**
-This project serves as a **drop-in replacement for FastAPI-based applications** or any API utilizing the OpenAPI format.This project is a **drop-in replacement for FastAPI-based applications**, supporting:
+This project serves as a **drop-in replacement for FastAPI-based applications** or any API utilizing the OpenAPI format. It seamlessly integrates with an **already running FastAPI server**, enabling OpenAI-powered function calling, supporting:
 - **Single API Mode** – Run a standalone FastAPI app with OpenAI-powered function calling.
 - **Microservices Mode** – Run multiple services with an Nginx API gateway and OpenAPI-based function calling.
 - **OpenAPI Integration** – Dynamically fetches OpenAPI specifications from services.
