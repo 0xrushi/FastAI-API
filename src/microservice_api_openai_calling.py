@@ -19,6 +19,7 @@ class APIConfig:
     max_calls: int = 5
     api_names: List[str] = None
     debug: bool = True
+    api_log_file: str = "api_log.json"
 
     def __post_init__(self):
         if self.api_names is None:
@@ -143,9 +144,6 @@ class APIOrchestrator:
         return f"{base_path}/{api_name}{endpoint_path}"
 
 
-
-    from rich.prompt import Confirm
-
     def execute_api_call(self, function_name: str, params: Dict) -> Dict:
         """Execute API call with user confirmation"""
         for api_name, spec in self.openapi_specs.items():
@@ -249,15 +247,80 @@ class APIOrchestrator:
         if num_calls >= self.config.max_calls:
             console.print(f"[yellow]Reached maximum number of API calls: {self.config.max_calls}")
 
+
+    def _log_api_call(self, method, url, params, request_body):
+        """Log API call details to a JSON file for later replay"""
+        log_entry = {
+            "method": method.upper(),
+            "url": url,
+            "params": params,
+            "request_body": request_body
+        }
+
+        log_file = self.config.api_log_file
+        try:
+            if os.path.exists(log_file):
+                with open(log_file, "r") as f:
+                    logs = json.load(f)
+            else:
+                logs = []
+
+            logs.append(log_entry)
+
+            with open(log_file, "w") as f:
+                json.dump(logs, f, indent=4)
+
+        except Exception as e:
+            console.print(f"[red]Failed to log API call: {str(e)}")
+
+    def execute_api_call(self, function_name: str, params: Dict) -> Dict:
+        """Execute and log API call"""
+        for api_name, spec in self.openapi_specs.items():
+            for path, methods in spec["paths"].items():
+                for method, details in methods.items():
+                    current_func_name = details.get("operationId") or f"{method}_{path.replace('/', '_')}"
+
+                    if current_func_name == function_name:
+                        full_path = f"{self.config.base_url}/{api_name}{path}"
+
+                        if "parameters" in params:
+                            try:
+                                full_path = full_path.format(**params["parameters"])
+                            except KeyError as e:
+                                console.print(f"[red]Missing path parameter: {e}")
+                                return {"error": f"Missing path parameter: {e}"}
+
+                        console.print(f"\n[yellow]API Request:[/yellow] {method.upper()} {full_path}")
+
+                        confirm = Confirm.ask("[yellow]Proceed with API call?[/yellow]", default=True)
+                        if not confirm:
+                            console.print("[red]API call canceled by user.[/red]")
+                            return {"error": "API call canceled by user"}
+
+                        try:
+                            response = requests.request(
+                                method=method.upper(),
+                                url=full_path,
+                                json=params.get("requestBody"),
+                                params=params.get("parameters") if method.lower() == "get" else None,
+                                headers={"Content-Type": "application/json"}
+                            )
+                            response.raise_for_status()
+
+                            self._log_api_call(method, full_path, params.get("parameters"), params.get("requestBody"))
+
+                            return response.json()
+
+                        except requests.exceptions.RequestException as e:
+                            console.print(f"[red]API call failed: {str(e)}")
+                            return {"error": f"API call failed: {str(e)}"}
+
+        return {"error": f"Function '{function_name}' not found in OpenAPI specs"}
+
 def main():
-    # Initialize configuration with the correct base URL
     config = APIConfig(debug=False)
-    
-    # Create orchestrator
     orchestrator = APIOrchestrator(config)
-    
-    # Process user instruction
-    instruction = """Create a user and get userID, then add an item to cart for that userID."""
+    instruction = "Create a user and get userID, then add an item to cart for that userID."
     orchestrator.process_instruction(instruction)
 
 if __name__ == "__main__":
