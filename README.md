@@ -1,5 +1,5 @@
 # FastAI-API 
-## A Seamless Drop-in Solution for Tool Calling in FastAPI with OpenAI Integration
+## A Seamless Drop-in Solution for OpenAI Tool Calling in FastAPI
 ---
 
 ## 📌 **Overview**
